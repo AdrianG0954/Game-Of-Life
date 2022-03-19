@@ -15,6 +15,7 @@ namespace GOLStartUpTemplate3
     public partial class Form1 : Form
     {
         #region Variables
+
         static int WidthNum = 30;
         static int HeightNum = 30;
         //neighbors' neighbors count
@@ -45,6 +46,7 @@ namespace GOLStartUpTemplate3
         bool IsHudOn = true;
         bool NeighborCountBool = true;
         bool IsGridOn = true;
+        bool IsTorodial = true;
         #endregion
 
         #region Form1 and Timer Tick
@@ -79,14 +81,23 @@ namespace GOLStartUpTemplate3
         // Calculate the next generation of cells
         private void NextGeneration()
         {
+            int numOfAlive = 0;
             for (int y = 0; y < universe.GetLength(1); y++)
             {
                 for (int x = 0; x < universe.GetLength(0); x++)
                 {
+                    if (IsTorodial == true)
+                    {
+                        numOfAlive = CountNeighborsToroidal(x, y);
+                        NextNeighborTorodial(x, y);
+                    }
+                    else
+                    {
+                        numOfAlive = CountNeighborsFinite(x, y);
+                        NextNeighborFinite(x, y);
+                    }
                     scratchPad[x, y] = false;
-                    int numOfAlive = CountNeighborsToroidal(x, y);
-                    NextNeighborTorodial(x, y);
-
+                    
                     //Apply the rules
                     if (universe[x, y] == true)
                     {
@@ -225,7 +236,10 @@ namespace GOLStartUpTemplate3
 
                     if (yCheck >= yLen) { continue; }
 
-                    //NeighborsCount[xCheck, yCheck] = CountNeighborsFinite(xCheck, yCheck);
+                    if(IsTorodial == false)
+                    {
+                        NeighborsCount[xCheck, yCheck] = CountNeighborsFinite(xCheck, yCheck);
+                    }
                 }
             }
         }
@@ -262,7 +276,10 @@ namespace GOLStartUpTemplate3
                     {
                         yCheck = 0;
                     }
-                    NeighborsCount[xCheck, yCheck] = CountNeighborsToroidal(xCheck, yCheck);
+                    if(IsTorodial == true)
+                    {
+                        NeighborsCount[xCheck, yCheck] = CountNeighborsToroidal(xCheck, yCheck);
+                    }
                 }
             }
         }
@@ -335,7 +352,7 @@ namespace GOLStartUpTemplate3
                     }
                 }
             }
-            Font helloFont = new Font("Arial", 20f);
+            Font helloFont = new Font("Arial", 15f);
             StringFormat stringFormat1 = new StringFormat
             {
                 Alignment = StringAlignment.Near,
@@ -343,8 +360,13 @@ namespace GOLStartUpTemplate3
             };
             if(IsHudOn == true)
             {
-                e.Graphics.DrawString($"Generations = {generations}\nCell Count = {numberOfAlive}\n Boundary Type:\nUniverse Size: (Width:{WidthNum},Height{HeightNum})", 
-                    helloFont, HUD, graphicsPanel1.ClientRectangle, stringFormat1);
+                if (IsTorodial == true)
+                {
+                    e.Graphics.DrawString($"Generations = {generations}\nCell Count = {numberOfAlive}\nBoundary Type: Torodial\nUniverse Size: (Width:{WidthNum},Height:{HeightNum})",
+                                        helloFont, HUD, graphicsPanel1.ClientRectangle, stringFormat1);
+                } else
+                    e.Graphics.DrawString($"Generations = {generations}\nCell Count = {numberOfAlive}\nBoundary Type: Finite\nUniverse Size: (Width:{WidthNum},Height:{HeightNum})",
+                                        helloFont, HUD, graphicsPanel1.ClientRectangle, stringFormat1);
             }
             
             //Cleaning up pens and brushes
@@ -375,7 +397,11 @@ namespace GOLStartUpTemplate3
                 else
                     numberOfAlive--;
                 toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
-                NextNeighborTorodial(x, y);
+                if(IsTorodial == true)
+                {
+                    NextNeighborTorodial(x, y);
+                } else
+                    NextNeighborFinite(x, y);
 
                 // Tell Windows you need to repaint
                 graphicsPanel1.Invalidate();
@@ -433,6 +459,11 @@ namespace GOLStartUpTemplate3
             toolStripStatusLabel2.Text = "Interval = " + Properties.Settings.Default.TimerInterval;
             WidthNum = Properties.Settings.Default.WidthCell;
             HeightNum = Properties.Settings.Default.HeightCell;
+            universe = new bool[WidthNum, HeightNum];
+            scratchPad = new bool[WidthNum, HeightNum];
+            NeighborsCount = new int[WidthNum, HeightNum];
+
+            graphicsPanel1.Invalidate();
         }
         private void reloadToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -456,7 +487,7 @@ namespace GOLStartUpTemplate3
         }
         private void hUDToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (hUDToolStripMenuItem.Checked == false)
+            if (hUDToolStripMenuItem.Checked == false || hUDToolStripMenuItem1.Checked == false)
             {
                 IsHudOn = false;
             }
@@ -467,7 +498,7 @@ namespace GOLStartUpTemplate3
         }
         private void neighborCountToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (neighborCountToolStripMenuItem.Checked == false)
+            if (neighborCountToolStripMenuItem.Checked == false || neighborCountToolStripMenuItem1.Checked == false)
             {
                 NeighborCountBool = false;
             }
@@ -478,7 +509,7 @@ namespace GOLStartUpTemplate3
         }
         private void gridToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (gridToolStripMenuItem.Checked == false)
+            if (gridToolStripMenuItem.Checked == false || gridToolStripMenuItem1.Checked == false)
             {
                 IsGridOn = false;
             }
@@ -486,6 +517,27 @@ namespace GOLStartUpTemplate3
                 IsGridOn = true;
 
             graphicsPanel1.Invalidate();
+        }
+        private void torodialToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if(torodialToolStripMenuItem.Checked == false && finiteToolStripMenuItem.Checked == true)
+            {
+                finiteToolStripMenuItem.Checked = !torodialToolStripMenuItem.Checked;
+                IsTorodial = false;
+            } else
+                IsTorodial = true;
+  
+            graphicsPanel1.Invalidate();
+        }
+        private void finiteToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (finiteToolStripMenuItem.Checked == false && torodialToolStripMenuItem.Checked == true)
+            {
+                torodialToolStripMenuItem.Checked = !finiteToolStripMenuItem.Checked;
+                IsTorodial = true;
+            }
+            else
+                IsTorodial = false;
         }
         #endregion
 
@@ -816,5 +868,17 @@ namespace GOLStartUpTemplate3
         }
 
         #endregion
+
+        #region Check Changed
+        private void Torodial_CheckedChanged(object sender, EventArgs e)
+        {
+            finiteToolStripMenuItem.Checked = !torodialToolStripMenuItem.Checked;
+        }
+        private void Finite_CheckedChanged(object sender, EventArgs e)
+        {
+            torodialToolStripMenuItem.Checked = !finiteToolStripMenuItem.Checked;
+        }
+        #endregion
+
     }
 }

@@ -28,7 +28,6 @@ namespace GOLStartUpTemplate3
             {
                 numericUpDown1.Value = value;
             }
-
         }
 
         private void button3_Click(object sender, EventArgs e)
