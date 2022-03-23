@@ -27,14 +27,14 @@ namespace GOLStartUpTemplate3
         // Drawing colors
         Color gridColor = Color.Black;
         Color cellColor = Color.Gray;
-        Color nah = Color.FromArgb(180,255,0,0);
+        Color nah = Color.FromArgb(180, 255, 0, 0);
 
         // The Timer class
         Timer timer = new Timer();
 
         //Current Seed 
-        Random rand = new Random();
         static int Storage = 2500;
+        static int currentStorage = 2500;
 
         // Generation count
         int generations = 0;
@@ -52,7 +52,20 @@ namespace GOLStartUpTemplate3
         #region Form1 and Timer Tick
         public Form1()
         {
+
+            // Turn on double buffering.
+            this.DoubleBuffered = true;
+
+            // Allow repainting when the windows is resized.
+            this.SetStyle(ControlStyles.ResizeRedraw, true);
+
+            // Allow repainting when the windows is resized.
+            this.SetStyle(ControlStyles.ResizeRedraw, true);
+
             InitializeComponent();
+
+            //to disable pause button since there is nothing to pause
+            toolStripButton2.Enabled = false;
 
             // Setup the timer
             timer.Interval = 20; // milliseconds
@@ -67,8 +80,13 @@ namespace GOLStartUpTemplate3
             gridColor = Properties.Settings.Default.GridColor;
             cellColor = Properties.Settings.Default.CellColor;
             timer.Interval = Properties.Settings.Default.TimerInterval;
+            toolStripStatusLabel2.Text = "Interval = " + timer.Interval;
             WidthNum = Properties.Settings.Default.WidthCell;
             HeightNum = Properties.Settings.Default.HeightCell;
+            universe = new bool[WidthNum, HeightNum];
+            scratchPad = new bool[WidthNum, HeightNum];
+            NeighborsCount = new int[WidthNum, HeightNum];
+            numberOfAlive = Properties.Settings.Default.NumOfAlive;
         }
         // The event called by the timer every Interval milliseconds.
         private void Timer_Tick(object sender, EventArgs e)
@@ -81,11 +99,11 @@ namespace GOLStartUpTemplate3
         // Calculate the next generation of cells
         private void NextGeneration()
         {
-            int numOfAlive = 0;
             for (int y = 0; y < universe.GetLength(1); y++)
             {
                 for (int x = 0; x < universe.GetLength(0); x++)
                 {
+                    int numOfAlive;
                     if (IsTorodial == true)
                     {
                         numOfAlive = CountNeighborsToroidal(x, y);
@@ -97,7 +115,7 @@ namespace GOLStartUpTemplate3
                         NextNeighborFinite(x, y);
                     }
                     scratchPad[x, y] = false;
-                    
+
                     //Apply the rules
                     if (universe[x, y] == true)
                     {
@@ -126,11 +144,25 @@ namespace GOLStartUpTemplate3
                     }
                 }
             }
-
             //copy what is in scratchpad to universe.
             bool[,] temp = universe;
             universe = scratchPad;
             scratchPad = temp;
+
+            for(int y = 0; y < universe.GetLength(1); y++)
+            {
+                for(int x = 0; x < universe.GetLength(0); x++)
+                {
+                    if (IsTorodial == true)
+                    {
+                        NeighborsCount[x,y] = CountNeighborsToroidal(x, y);
+                    }
+                    else
+                    {
+                        NeighborsCount[x,y] = CountNeighborsFinite(x, y);
+                    }
+                }
+            }
 
             // Increment generation count
             generations++;
@@ -216,6 +248,7 @@ namespace GOLStartUpTemplate3
         //this function is to count the neighbors neighbors of finite 
         private void NextNeighborFinite(int x, int y)
         {
+            int count = 0;
             int xLen = universe.GetLength(0);
             int yLen = universe.GetLength(1);
 
@@ -236,7 +269,9 @@ namespace GOLStartUpTemplate3
 
                     if (yCheck >= yLen) { continue; }
 
-                    if(IsTorodial == false)
+                    if (universe[xCheck, yCheck] == true) count++;
+
+                    if (IsTorodial == false)
                     {
                         NeighborsCount[xCheck, yCheck] = CountNeighborsFinite(xCheck, yCheck);
                     }
@@ -245,7 +280,6 @@ namespace GOLStartUpTemplate3
         }
         private void NextNeighborTorodial(int x, int y)
         {
-
             int xLen = universe.GetLength(0);
             int yLen = universe.GetLength(1);
             for (int yOffset = -1; yOffset <= 1; yOffset++)
@@ -276,10 +310,11 @@ namespace GOLStartUpTemplate3
                     {
                         yCheck = 0;
                     }
-                    if(IsTorodial == true)
+                    if (IsTorodial == true)
                     {
                         NeighborsCount[xCheck, yCheck] = CountNeighborsToroidal(xCheck, yCheck);
                     }
+
                 }
             }
         }
@@ -291,9 +326,9 @@ namespace GOLStartUpTemplate3
         {
             // Calculate the width and height of each cell in pixels
             // CELL WIDTH = WINDOW WIDTH / NUMBER OF CELLS IN X
-            int cellWidth = graphicsPanel1.ClientSize.Width / universe.GetLength(0);
+            float cellWidth = (float)graphicsPanel1.ClientSize.Width / (float)universe.GetLength(0);
             // CELL HEIGHT = WINDOW HEIGHT / NUMBER OF CELLS IN Y
-            int cellHeight = graphicsPanel1.ClientSize.Height / universe.GetLength(1);
+            float cellHeight = (float)graphicsPanel1.ClientSize.Height / (float)universe.GetLength(1);
 
             // A Pen for drawing the grid lines (color, width)
             Pen gridPen = new Pen(gridColor, (float).5);
@@ -309,9 +344,9 @@ namespace GOLStartUpTemplate3
                 for (int x = 0; x < universe.GetLength(0); x++)
                 {
                     // A rectangle to represent each cell in pixels
-                    Rectangle cellRect = Rectangle.Empty;
-                    cellRect.X = x * cellWidth;
-                    cellRect.Y = y * cellHeight;
+                    RectangleF cellRect = RectangleF.Empty;
+                    cellRect.X = (float)x * cellWidth;
+                    cellRect.Y = (float)y * cellHeight;
                     cellRect.Width = cellWidth;
                     cellRect.Height = cellHeight;
 
@@ -322,7 +357,7 @@ namespace GOLStartUpTemplate3
                     }
 
                     // Outline the cell with a pen
-                    if(IsGridOn == true)
+                    if (IsGridOn == true)
                     {
                         e.Graphics.DrawRectangle(gridPen, cellRect.X, cellRect.Y, cellRect.Width, cellRect.Height);
                     }
@@ -330,18 +365,18 @@ namespace GOLStartUpTemplate3
                     //this prevents the rectangle from printing a zero
                     if (NeighborsCount[x, y] != 0)
                     {
-                        Font font = new Font("Arial", 20f);
+                        Font font = new Font("Arial", 18f);
                         StringFormat stringFormat = new StringFormat
                         {
                             Alignment = StringAlignment.Center,
                             LineAlignment = StringAlignment.Center
                         };
 
-                        Rectangle rect = cellRect;
-                        int neighbors = NeighborsCount[x, y];
-                        if(NeighborCountBool == true)
+                        RectangleF rect = cellRect;
+                        int neighbors = NeighborsCount[x,y];
+                        if (NeighborCountBool == true)
                         {
-                            // this is to show what kills and what lets a cell live red / kill green / live
+                            // this is to show what kills and what lets a cell live / cell that will live has green / cell that will die has red 
                             if (universe[x, y] == true && NeighborsCount[x, y] == 2 || NeighborsCount[x, y] == 3)
                             {
                                 e.Graphics.DrawString(neighbors.ToString(), font, Brushes.Green, rect, stringFormat);
@@ -352,26 +387,22 @@ namespace GOLStartUpTemplate3
                     }
                 }
             }
-            Font helloFont = new Font("Arial", 15f);
+            Font helloFont = new Font("Arial", 14f);
             StringFormat stringFormat1 = new StringFormat
             {
                 Alignment = StringAlignment.Near,
                 LineAlignment = StringAlignment.Far
             };
-            if(IsHudOn == true)
+            string boundary = " ";
+            if (IsHudOn == true)
             {
-                if (IsTorodial == true)
-                {
-                    e.Graphics.DrawString($"Generations = {generations}\nCell Count = {numberOfAlive}\nBoundary Type: Torodial\nUniverse Size: (Width:{WidthNum},Height:{HeightNum})",
-                                        helloFont, HUD, graphicsPanel1.ClientRectangle, stringFormat1);
-                } else
-                    e.Graphics.DrawString($"Generations = {generations}\nCell Count = {numberOfAlive}\nBoundary Type: Finite\nUniverse Size: (Width:{WidthNum},Height:{HeightNum})",
-                                        helloFont, HUD, graphicsPanel1.ClientRectangle, stringFormat1);
+                e.Graphics.DrawString($"Generations = {generations}\nCell Count = {numberOfAlive}\nBoundary Type: {boundaryType(boundary)}\nUniverse Size: (Width:{WidthNum},Height:{HeightNum})",
+                helloFont, HUD, graphicsPanel1.ClientRectangle, stringFormat1);
             }
-            
             //Cleaning up pens and brushes
             gridPen.Dispose();
             cellBrush.Dispose();
+
         }
         private void graphicsPanel1_MouseClick(object sender, MouseEventArgs e)
         {
@@ -379,29 +410,35 @@ namespace GOLStartUpTemplate3
             if (e.Button == MouseButtons.Left)
             {
                 // Calculate the width and height of each cell in pixels
-                int cellWidth = graphicsPanel1.ClientSize.Width / universe.GetLength(0);
-                int cellHeight = graphicsPanel1.ClientSize.Height / universe.GetLength(1);
+                float cellWidth = (float)graphicsPanel1.ClientSize.Width / (float)universe.GetLength(0);
+                float cellHeight = (float)graphicsPanel1.ClientSize.Height / (float)universe.GetLength(1);
 
                 // Calculate the cell that was clicked in
                 // CELL X = MOUSE X / CELL WIDTH
-                int x = e.X / cellWidth;
+                int x = (int)((float)e.X / cellWidth);
                 // CELL Y = MOUSE Y / CELL HEIGHT
-                int y = e.Y / cellHeight;
+                int y = (int)((float)e.Y / cellHeight);
 
                 // Toggle the cell's state
                 universe[x, y] = !universe[x, y];
+
                 if (universe[x, y] == true)
                 {
                     numberOfAlive++;
                 }
                 else
                     numberOfAlive--;
+
                 toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
-                if(IsTorodial == true)
+
+                if (IsTorodial == true)
                 {
                     NextNeighborTorodial(x, y);
-                } else
+                }
+                else
+                {
                     NextNeighborFinite(x, y);
+                }
 
                 // Tell Windows you need to repaint
                 graphicsPanel1.Invalidate();
@@ -419,11 +456,17 @@ namespace GOLStartUpTemplate3
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
             timer.Enabled = true;
+            toolStripButton1.Enabled = false;
+            toolStripButton2.Enabled = true;
+            toolStripButton3.Enabled = false;
         }
         //code to pause the game.
         private void toolStripButton2_Click(object sender, EventArgs e)
         {
             timer.Enabled = false;
+            toolStripButton1.Enabled = true;
+            toolStripButton3.Enabled = true;
+            toolStripButton2.Enabled = false;
         }
         //code to iterate once
         private void toolStripButton3_Click(object sender, EventArgs e)
@@ -433,20 +476,7 @@ namespace GOLStartUpTemplate3
         //code to clear the screen.
         private void NewToolStripButton_Click(object sender, EventArgs e)
         {
-            for (int y = 0; y < universe.GetLength(1); y++)
-            {
-
-                for (int x = 0; x < universe.GetLength(0); x++)
-                {
-                    universe[x, y] = false;
-                    NeighborsCount[x, y] = 0;
-                    numberOfAlive = 0;
-                    generations = 0;
-                    toolStripStatusLabelGenerations.Text = "Generations = " + generations.ToString();
-                    toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
-                }
-            }
-            graphicsPanel1.Invalidate();
+            New();
         }
         private void resetToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -457,6 +487,8 @@ namespace GOLStartUpTemplate3
             cellColor = Properties.Settings.Default.CellColor;
             timer.Interval = Properties.Settings.Default.TimerInterval;
             toolStripStatusLabel2.Text = "Interval = " + Properties.Settings.Default.TimerInterval;
+            numberOfAlive = Properties.Settings.Default.NumOfAlive;
+            toolStripStatusAlive.Text = "Alive = " + numberOfAlive;
             WidthNum = Properties.Settings.Default.WidthCell;
             HeightNum = Properties.Settings.Default.HeightCell;
             universe = new bool[WidthNum, HeightNum];
@@ -520,24 +552,26 @@ namespace GOLStartUpTemplate3
         }
         private void torodialToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if(torodialToolStripMenuItem.Checked == false && finiteToolStripMenuItem.Checked == true)
+            if (torodialToolStripMenuItem.Checked == false && finiteToolStripMenuItem.Checked == true)
             {
-                finiteToolStripMenuItem.Checked = !torodialToolStripMenuItem.Checked;
+                
                 IsTorodial = false;
-            } else
+            }
+            else
                 IsTorodial = true;
-  
+
             graphicsPanel1.Invalidate();
         }
         private void finiteToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (finiteToolStripMenuItem.Checked == false && torodialToolStripMenuItem.Checked == true)
             {
-                torodialToolStripMenuItem.Checked = !finiteToolStripMenuItem.Checked;
+                
                 IsTorodial = true;
             }
             else
                 IsTorodial = false;
+            graphicsPanel1.Invalidate();
         }
         #endregion
 
@@ -594,7 +628,7 @@ namespace GOLStartUpTemplate3
             {
                 timer.Interval = hello.TimeInterval;
                 toolStripStatusLabel2.Text = "Interval = " + timer.Interval;
-                if(WidthNum != hello.WidthCell || HeightNum != hello.HeightCell)
+                if (WidthNum != hello.WidthCell || HeightNum != hello.HeightCell)
                 {
                     WidthNum = hello.WidthCell;
                     HeightNum = hello.HeightCell;
@@ -633,7 +667,6 @@ namespace GOLStartUpTemplate3
         #region Functions for randomizing
         private void fromSeedToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            
             RandomModal hmm = new RandomModal();
 
             hmm.RandomSeed = Storage;
@@ -647,85 +680,112 @@ namespace GOLStartUpTemplate3
             }
             graphicsPanel1.Invalidate();
         }
-
-        private void RandomSeed()
+        private void FromTime()
         {
+            New();
             numberOfAlive = 0;
-            Storage = rand.Next(-999999,999999);
+            Random rand = new Random();
 
             for (int y = 0; y < universe.GetLength(1); y++)
             {
                 for (int x = 0; x < universe.GetLength(0); x++)
                 {
+                    
                     if (rand.Next(0, 2) == 0)
                     {
                         universe[x, y] = true;
                         numberOfAlive++;
-                        NextNeighborTorodial(x, y);
+                        if (torodialToolStripMenuItem.Checked == true)
+                        {
+                            NextNeighborTorodial(x, y);
+                        }
+                        else
+                        {
+                            NextNeighborFinite(x, y);
+                        }
                     }
                     else
+                    {
                         universe[x, y] = false;
+                    }   
                 }
             }
+            Storage = rand.GetHashCode();
             toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
-            toolStripStatusSeed.Text = "Seed = " + Storage.ToString();
+            toolStripStatusSeed.Text = "Seed = " + Storage;
 
             graphicsPanel1.Invalidate();
         }
-
         private void fromTimeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            RandomSeed();
+            FromTime();
         }
-
         private void fromCurrentSeedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             FromCurrentSeed();
         }
         private void FromRandSeed()
         {
+            New();
+            Random rand = new Random(Storage);
             numberOfAlive = 0;
 
             for (int y = 0; y < universe.GetLength(1); y++)
             {
-
                 for (int x = 0; x < universe.GetLength(0); x++)
                 {
                     if (rand.Next(0, 2) == 0)
                     {
                         universe[x, y] = true;
                         numberOfAlive++;
-                        NextNeighborTorodial(x, y);
+                        if (torodialToolStripMenuItem.Checked == true)
+                        {
+                            NextNeighborTorodial(x, y);
+                        }
+                        else
+                        {
+                            NextNeighborFinite(x, y);
+                        }
                     }
                     else
+                    {
                         universe[x, y] = false;
+                    }
                 }
             }
-
             toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
+            toolStripStatusSeed.Text = "Seed = " + Storage;
 
             graphicsPanel1.Invalidate();
         }
         private void FromCurrentSeed()
         {
-            numberOfAlive = 0;
+            Random rand = new Random(currentStorage);
 
-            for (int y = 0; y < universe.GetLength(1); y++)
+            if (Storage == currentStorage)
             {
-
-                for (int x = 0; x < universe.GetLength(0); x++)
+                for (int y = 0; y < universe.GetLength(1); y++)
                 {
-                    if (rand.Next(0, 2) == 0)
+                    for (int x = 0; x < universe.GetLength(0); x++)
                     {
-                        universe[x, y] = true;
-                        numberOfAlive++;
-                        NextNeighborTorodial(x, y);
+                        if (rand.Next(0, 2) == 0)
+                        {
+                            universe[x, y] = true;
+                            numberOfAlive++;
+                            if (torodialToolStripMenuItem.Checked == true)
+                            {
+                                NextNeighborTorodial(x, y);
+                            }
+                            else
+                            {
+                                NextNeighborFinite(x, y);
+                            }
+                        }
+                        else
+                            universe[x, y] = false;
                     }
-                    else
-                        universe[x, y] = false;
                 }
             }
-            toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
             toolStripStatusSeed.Text = "Seed = " + Storage;
 
             graphicsPanel1.Invalidate();
@@ -742,7 +802,6 @@ namespace GOLStartUpTemplate3
             if (DialogResult.OK == dlg.ShowDialog())
             {
                 StreamWriter writer = new StreamWriter(dlg.FileName);
-
                 // Write any comments you want to include first.
                 // Prefix all comment strings with an exclamation point.
                 // Use WriteLine to write the strings to the file. 
@@ -781,7 +840,7 @@ namespace GOLStartUpTemplate3
         }
         private void Open()
         {
-            int yPos = 0;
+            int num = 0;
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "All Files|*.*|Cells|*.cells";
             dlg.FilterIndex = 2;
@@ -817,7 +876,7 @@ namespace GOLStartUpTemplate3
                     if (row.StartsWith("!") == false)
                     {
                         // and adjust the maxWidth variable if necessary.
-                        maxWidth = hello;
+                        maxWidth++;
                     }
                 }
 
@@ -829,6 +888,9 @@ namespace GOLStartUpTemplate3
 
                 // Reset the file pointer back to the beginning of the file.
                 reader.BaseStream.Seek(0, SeekOrigin.Begin);
+
+                //Create yPos variable
+                int yPos = 0;
 
                 // Iterate through the file again, this time reading in the cells.
                 while (!reader.EndOfStream)
@@ -851,6 +913,7 @@ namespace GOLStartUpTemplate3
                             {
                                 // set the corresponding cell in the universe to alive.
                                 universe[xPos, yPos] = true;
+                                num++;
                             }
                             // If row[xPos] is a '.' (period) then
                             if (row[xPos] == '.')
@@ -858,15 +921,28 @@ namespace GOLStartUpTemplate3
                                 // set the corresponding cell in the universe to dead.
                                 universe[xPos, yPos] = false;
                             }
-                            yPos++;
+
+                            if (torodialToolStripMenuItem.Checked == true)
+                            {
+                                NextNeighborTorodial(xPos, yPos);
+                            }
+                            else
+                            {
+                                NextNeighborFinite(xPos, yPos);
+                            }
+                            WidthNum = xPos + 1;
                         }
+                        yPos++;
+                        HeightNum = yPos;
                     }
                 }
-                // Close the file.
+                numberOfAlive = num;
+                toolStripStatusAlive.Text = "Alive = " + numberOfAlive;
+                graphicsPanel1.Invalidate();
+                //Close the file.
                 reader.Close();
             }
         }
-
         #endregion
 
         #region Check Changed
@@ -877,6 +953,39 @@ namespace GOLStartUpTemplate3
         private void Finite_CheckedChanged(object sender, EventArgs e)
         {
             torodialToolStripMenuItem.Checked = !finiteToolStripMenuItem.Checked;
+        }
+        #endregion
+
+        #region Random Functions
+        private Object boundaryType(string hello)
+        {
+            if (IsTorodial == true)
+            {
+                hello = "Torodial";
+            }
+            else if(IsTorodial == false)
+            {
+                hello = "Finite";
+            }
+            return hello;
+        }
+
+        private void New()
+        {
+            for (int y = 0; y < universe.GetLength(1); y++)
+            {
+
+                for (int x = 0; x < universe.GetLength(0); x++)
+                {
+                    universe[x, y] = false;
+                    NeighborsCount[x, y] = 0;
+                    numberOfAlive = 0;
+                    generations = 0;
+                    toolStripStatusLabelGenerations.Text = "Generations = " + generations.ToString();
+                    toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
+                }
+            }
+            graphicsPanel1.Invalidate();
         }
         #endregion
 

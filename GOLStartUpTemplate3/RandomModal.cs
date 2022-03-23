@@ -34,7 +34,7 @@ namespace GOLStartUpTemplate3
         {
             Random rand = new Random();
 
-            numericUpDown1.Value = rand.Next(-999999,999999);
+            numericUpDown1.Value = rand.Next(-999999999,999999999);
         }
     }
 }
