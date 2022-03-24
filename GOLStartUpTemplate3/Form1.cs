@@ -16,9 +16,11 @@ namespace GOLStartUpTemplate3
     {
         #region Variables
 
+        //this is the default width of the grid
         static int WidthNum = 30;
+        //this is the default height of the grid
         static int HeightNum = 30;
-        //neighbors' neighbors count
+        //neighbors neighbors count
         int[,] NeighborsCount = new int[WidthNum, HeightNum];
         // The universe array
         bool[,] universe = new bool[WidthNum, HeightNum];
@@ -34,7 +36,6 @@ namespace GOLStartUpTemplate3
 
         //Current Seed 
         static int Storage = 2500;
-        static int currentStorage = 2500;
 
         // Generation count
         int generations = 0;
@@ -50,6 +51,7 @@ namespace GOLStartUpTemplate3
         #endregion
 
         #region Form1 and Timer Tick
+        //this code is for the form/form settings
         public Form1()
         {
 
@@ -62,6 +64,7 @@ namespace GOLStartUpTemplate3
             // Allow repainting when the windows is resized.
             this.SetStyle(ControlStyles.ResizeRedraw, true);
 
+            //initializes the form
             InitializeComponent();
 
             //to disable pause button since there is nothing to pause
@@ -76,6 +79,7 @@ namespace GOLStartUpTemplate3
             //Current Seed
             toolStripStatusSeed.Text = "Seed = " + Storage;
 
+            //this code is to save the options the user changes in the settings
             graphicsPanel1.BackColor = Properties.Settings.Default.BackGroundColor;
             gridColor = Properties.Settings.Default.GridColor;
             cellColor = Properties.Settings.Default.CellColor;
@@ -88,7 +92,7 @@ namespace GOLStartUpTemplate3
             NeighborsCount = new int[WidthNum, HeightNum];
             numberOfAlive = Properties.Settings.Default.NumOfAlive;
         }
-        // The event called by the timer every Interval milliseconds.
+        //this calls next generation every tick
         private void Timer_Tick(object sender, EventArgs e)
         {
             NextGeneration();
@@ -99,18 +103,22 @@ namespace GOLStartUpTemplate3
         // Calculate the next generation of cells
         private void NextGeneration()
         {
+            //goes through entire grid
             for (int y = 0; y < universe.GetLength(1); y++)
             {
                 for (int x = 0; x < universe.GetLength(0); x++)
                 {
                     int numOfAlive;
+                    //this check if torodial or finite is checked
                     if (IsTorodial == true)
                     {
+                        //once checked it makes the num of alive = count neighbors and calls next neighbor torodial
                         numOfAlive = CountNeighborsToroidal(x, y);
                         NextNeighborTorodial(x, y);
                     }
                     else
                     {
+                        //this is if the other is checked and it makes the num of alive = count neighbors and calls next neighbor finite
                         numOfAlive = CountNeighborsFinite(x, y);
                         NextNeighborFinite(x, y);
                     }
@@ -149,6 +157,7 @@ namespace GOLStartUpTemplate3
             universe = scratchPad;
             scratchPad = temp;
 
+            //this goes through all the next neighbors and updates them 
             for(int y = 0; y < universe.GetLength(1); y++)
             {
                 for(int x = 0; x < universe.GetLength(0); x++)
@@ -189,14 +198,19 @@ namespace GOLStartUpTemplate3
                     int xCheck = x + xOffset;
                     int yCheck = y + yOffset;
 
+                    // if xOffset and yOffset are both equal to 0 then continue
                     if (xOffset == 0 && yOffset == 0) { continue; }
 
+                    // if xCheck is less than 0 then continue
                     if (xCheck < 0) { continue; }
 
+                    // if yCheck is less than 0 then continue
                     if (yCheck < 0) { continue; }
 
+                    // if xCheck is greater than or equal too xLen then continue
                     if (xCheck >= xLen) { continue; }
 
+                    // if yCheck is greater than or equal too yLen then continue
                     if (yCheck >= yLen) { continue; }
 
                     if (universe[xCheck, yCheck] == true) count++;
@@ -245,7 +259,9 @@ namespace GOLStartUpTemplate3
 
             return count;
         }
-        //this function is to count the neighbors neighbors of finite 
+        //this function is to count the neighbors neighbors of finite
+        
+        //this function counts the neighbors of the cell that was clicked finitly 
         private void NextNeighborFinite(int x, int y)
         {
             int count = 0;
@@ -259,18 +275,24 @@ namespace GOLStartUpTemplate3
                     int xCheck = x + xOffset;
                     int yCheck = y + yOffset;
 
+                    // if xOffset and yOffset are both equal to 0 then continue
                     if (xOffset == 0 && yOffset == 0) { continue; }
 
+                    // if xCheck is less than 0 then continue
                     if (xCheck < 0) { continue; }
 
+                    // if yCheck is less than 0 then continue
                     if (yCheck < 0) { continue; }
 
+                    // if xCheck is greater than or equal too xLen then continue
                     if (xCheck >= xLen) { continue; }
 
+                    // if yCheck is greater than or equal too yLen then continue
                     if (yCheck >= yLen) { continue; }
 
                     if (universe[xCheck, yCheck] == true) count++;
 
+                    //if its not torodial it sets the neighbor count to count neighbor finite
                     if (IsTorodial == false)
                     {
                         NeighborsCount[xCheck, yCheck] = CountNeighborsFinite(xCheck, yCheck);
@@ -278,6 +300,7 @@ namespace GOLStartUpTemplate3
                 }
             }
         }
+        //this function counts the neighbors of the cell that was clicked (torodial) 
         private void NextNeighborTorodial(int x, int y)
         {
             int xLen = universe.GetLength(0);
@@ -394,6 +417,7 @@ namespace GOLStartUpTemplate3
                 LineAlignment = StringAlignment.Far
             };
             string boundary = " ";
+            //this draws the grid depending if the grid is turned on or off
             if (IsHudOn == true)
             {
                 e.Graphics.DrawString($"Generations = {generations}\nCell Count = {numberOfAlive}\nBoundary Type: {boundaryType(boundary)}\nUniverse Size: (Width:{WidthNum},Height:{HeightNum})",
@@ -404,6 +428,7 @@ namespace GOLStartUpTemplate3
             cellBrush.Dispose();
 
         }
+        //this occurs every left click
         private void graphicsPanel1_MouseClick(object sender, MouseEventArgs e)
         {
             // If the left mouse button was clicked
@@ -422,15 +447,17 @@ namespace GOLStartUpTemplate3
                 // Toggle the cell's state
                 universe[x, y] = !universe[x, y];
 
+                //if the cell is alive add one to the number of alive if one is dead subtract one
                 if (universe[x, y] == true)
                 {
                     numberOfAlive++;
                 }
                 else
                     numberOfAlive--;
-
+                //updates number of alive strip
                 toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
 
+                //calls next neighbor depending on boundary type
                 if (IsTorodial == true)
                 {
                     NextNeighborTorodial(x, y);
@@ -471,13 +498,14 @@ namespace GOLStartUpTemplate3
         //code to iterate once
         private void toolStripButton3_Click(object sender, EventArgs e)
         {
-            NextGeneration();
+            NextGeneration();        
         }
         //code to clear the screen.
         private void NewToolStripButton_Click(object sender, EventArgs e)
         {
             New();
         }
+        //this code is to reset the setting to default
         private void resetToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Properties.Settings.Default.Reset();
@@ -497,6 +525,7 @@ namespace GOLStartUpTemplate3
 
             graphicsPanel1.Invalidate();
         }
+        //this code reloads the most recently saved settings
         private void reloadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Properties.Settings.Default.Reload();
@@ -509,14 +538,17 @@ namespace GOLStartUpTemplate3
             WidthNum = Properties.Settings.Default.WidthCell;
             HeightNum = Properties.Settings.Default.HeightCell;
         }
+        //this is what function is called when a user clicks the save button
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SaveAs();
         }
+        //this is what function is called when a user clicks the open button
         private void openToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Open();
         }
+        //this turns the hud on or off when they click it
         private void hUDToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (hUDToolStripMenuItem.Checked == false || hUDToolStripMenuItem1.Checked == false)
@@ -528,6 +560,7 @@ namespace GOLStartUpTemplate3
 
             graphicsPanel1.Invalidate();
         }
+        //this turns the neighbor count on or off depending on the user 
         private void neighborCountToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (neighborCountToolStripMenuItem.Checked == false || neighborCountToolStripMenuItem1.Checked == false)
@@ -539,6 +572,7 @@ namespace GOLStartUpTemplate3
 
             graphicsPanel1.Invalidate();
         }
+        //this turns the grid on or off
         private void gridToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (gridToolStripMenuItem.Checked == false || gridToolStripMenuItem1.Checked == false)
@@ -550,6 +584,7 @@ namespace GOLStartUpTemplate3
 
             graphicsPanel1.Invalidate();
         }
+        //this code is the check that either turns torodial on or off
         private void torodialToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (torodialToolStripMenuItem.Checked == false && finiteToolStripMenuItem.Checked == true)
@@ -562,6 +597,7 @@ namespace GOLStartUpTemplate3
 
             graphicsPanel1.Invalidate();
         }
+        //this code is the check that either turns Finite on or off
         private void finiteToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (finiteToolStripMenuItem.Checked == false && torodialToolStripMenuItem.Checked == true)
@@ -583,6 +619,7 @@ namespace GOLStartUpTemplate3
 
             colorDialog.Color = graphicsPanel1.BackColor;
 
+            //if user selects ok it saves the back color to the one selected
             if (DialogResult.OK == colorDialog.ShowDialog())
             {
                 graphicsPanel1.BackColor = colorDialog.Color;
@@ -595,7 +632,7 @@ namespace GOLStartUpTemplate3
             ColorDialog colorDialog = new ColorDialog();
 
             colorDialog.Color = cellColor;
-
+            //if user selects ok it saves the cell color to the one selected
             if (DialogResult.OK == colorDialog.ShowDialog())
             {
                 cellColor = colorDialog.Color;
@@ -608,7 +645,7 @@ namespace GOLStartUpTemplate3
             ColorDialog colorDialog = new ColorDialog();
 
             colorDialog.Color = gridColor;
-
+            //if user selects ok it saves the grids color to the one selected
             if (DialogResult.OK == colorDialog.ShowDialog())
             {
                 gridColor = colorDialog.Color;
@@ -641,6 +678,7 @@ namespace GOLStartUpTemplate3
             }
             graphicsPanel1.Invalidate();
         }
+        //this shows the welcome code when a user clicks help 
         private void helpToolStripButton_Click(object sender, EventArgs e)
         {
             Tutorial Welcome = new Tutorial();
@@ -650,8 +688,10 @@ namespace GOLStartUpTemplate3
         #endregion
 
         #region Form Closed code
+        //this code sets the default settings to whatever is last saved.
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
+            //sets my settings default to the last saved settings
             Properties.Settings.Default.BackGroundColor = graphicsPanel1.BackColor;
             Properties.Settings.Default.GridColor = gridColor;
             Properties.Settings.Default.CellColor = cellColor;
@@ -665,12 +705,15 @@ namespace GOLStartUpTemplate3
         #endregion
 
         #region Functions for randomizing
+        //this code is for the modal for randomizing.
         private void fromSeedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             RandomModal hmm = new RandomModal();
 
+            //sets the up and down num as storage my variable for the seed.
             hmm.RandomSeed = Storage;
 
+            //if the user hits ok it sets storage as the randomseed and updates the status
             if (DialogResult.OK == hmm.ShowDialog())
             {
                 Storage = hmm.RandomSeed;
@@ -680,12 +723,15 @@ namespace GOLStartUpTemplate3
             }
             graphicsPanel1.Invalidate();
         }
+        //this code is for the time part of the random.
         private void FromTime()
         {
+            //calls new and sets storage to the date and time
             New();
-            numberOfAlive = 0;
-            Random rand = new Random();
+            Storage = DateTime.Now.Millisecond;
+            Random rand = new Random(Storage);
 
+            //randomizes the entire screen
             for (int y = 0; y < universe.GetLength(1); y++)
             {
                 for (int x = 0; x < universe.GetLength(0); x++)
@@ -695,6 +741,7 @@ namespace GOLStartUpTemplate3
                     {
                         universe[x, y] = true;
                         numberOfAlive++;
+                        //gives the random neighbors and updates them when needed.
                         if (torodialToolStripMenuItem.Checked == true)
                         {
                             NextNeighborTorodial(x, y);
@@ -710,60 +757,28 @@ namespace GOLStartUpTemplate3
                     }   
                 }
             }
-            Storage = rand.GetHashCode();
             toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
             toolStripStatusSeed.Text = "Seed = " + Storage;
 
             graphicsPanel1.Invalidate();
         }
+        //this code is what gets called when you click time
         private void fromTimeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             FromTime();
         }
+        //this code is what gets called when you click current seed.
         private void fromCurrentSeedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             FromCurrentSeed();
         }
+        //this code is what gets called in the modal
         private void FromRandSeed()
         {
             New();
             Random rand = new Random(Storage);
-            numberOfAlive = 0;
 
-            for (int y = 0; y < universe.GetLength(1); y++)
-            {
-                for (int x = 0; x < universe.GetLength(0); x++)
-                {
-                    if (rand.Next(0, 2) == 0)
-                    {
-                        universe[x, y] = true;
-                        numberOfAlive++;
-                        if (torodialToolStripMenuItem.Checked == true)
-                        {
-                            NextNeighborTorodial(x, y);
-                        }
-                        else
-                        {
-                            NextNeighborFinite(x, y);
-                        }
-                    }
-                    else
-                    {
-                        universe[x, y] = false;
-                    }
-                }
-            }
-            toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
-            toolStripStatusSeed.Text = "Seed = " + Storage;
-
-            graphicsPanel1.Invalidate();
-        }
-        private void FromCurrentSeed()
-        {
-            Random rand = new Random(currentStorage);
-
-            if (Storage == currentStorage)
-            {
+                //randomizes the entire screen
                 for (int y = 0; y < universe.GetLength(1); y++)
                 {
                     for (int x = 0; x < universe.GetLength(0); x++)
@@ -772,27 +787,70 @@ namespace GOLStartUpTemplate3
                         {
                             universe[x, y] = true;
                             numberOfAlive++;
+                            //gives the random neighbors and updates them when needed.
                             if (torodialToolStripMenuItem.Checked == true)
                             {
+                                NeighborsCount[x, y] = CountNeighborsToroidal(x, y);
                                 NextNeighborTorodial(x, y);
                             }
                             else
                             {
+                                
                                 NextNeighborFinite(x, y);
+                                NeighborsCount[x, y] = CountNeighborsFinite(x, y);
                             }
                         }
                         else
+                        {
                             universe[x, y] = false;
+                        }
                     }
                 }
-            }
+            
+            toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
             toolStripStatusSeed.Text = "Seed = " + Storage;
 
+            graphicsPanel1.Invalidate();
+        }
+        //this is the code for the from current seed 
+        private void FromCurrentSeed()
+        {
+            New();
+            Random rand = new Random(Storage);
+
+            //randomizes the entire screen
+            for (int y = 0; y < universe.GetLength(1); y++)
+            {
+                for (int x = 0; x < universe.GetLength(0); x++)
+                {
+                    if (rand.Next(0, 2) == 0)
+                    {
+                        universe[x, y] = true;
+                        numberOfAlive++;
+                        //gives the random neighbors and updates them when needed.
+                        if (torodialToolStripMenuItem.Checked == true)
+                        {
+                            NeighborsCount[x, y] = CountNeighborsToroidal(x, y);
+                            NextNeighborTorodial(x, y);
+                        }
+                        else
+                        {
+                            NeighborsCount[x, y] = CountNeighborsFinite(x, y);
+                            NextNeighborFinite(x, y);
+                        }
+                    }
+                    else
+                        universe[x, y] = false;
+                }
+            }
+            toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
+            toolStripStatusSeed.Text = "Seed = " + Storage;
             graphicsPanel1.Invalidate();
         }
         #endregion
 
         #region Save and open
+        //this code is for when you press save.
         private void SaveAs()
         {
             SaveFileDialog dlg = new SaveFileDialog();
@@ -838,6 +896,7 @@ namespace GOLStartUpTemplate3
                 writer.Close();
             }
         }
+        //this code is for when you want to open a save.
         private void Open()
         {
             int num = 0;
@@ -921,7 +980,7 @@ namespace GOLStartUpTemplate3
                                 // set the corresponding cell in the universe to dead.
                                 universe[xPos, yPos] = false;
                             }
-
+                            //this code gives the file neighbors so it isnt just gray cells
                             if (torodialToolStripMenuItem.Checked == true)
                             {
                                 NextNeighborTorodial(xPos, yPos);
@@ -930,12 +989,15 @@ namespace GOLStartUpTemplate3
                             {
                                 NextNeighborFinite(xPos, yPos);
                             }
+                            //making sure the width matches the x
                             WidthNum = xPos + 1;
                         }
                         yPos++;
+                        //making sure the height matches the y.
                         HeightNum = yPos;
                     }
                 }
+                //changes the number of alive.
                 numberOfAlive = num;
                 toolStripStatusAlive.Text = "Alive = " + numberOfAlive;
                 graphicsPanel1.Invalidate();
@@ -946,19 +1008,23 @@ namespace GOLStartUpTemplate3
         #endregion
 
         #region Check Changed
+        //this code is to make sure when you click on torodial it unchecks finite
         private void Torodial_CheckedChanged(object sender, EventArgs e)
         {
             finiteToolStripMenuItem.Checked = !torodialToolStripMenuItem.Checked;
         }
+        //this code is the opposite of the one above and unchecks torodial when finite is clicked 
         private void Finite_CheckedChanged(object sender, EventArgs e)
         {
             torodialToolStripMenuItem.Checked = !finiteToolStripMenuItem.Checked;
         }
         #endregion
 
-        #region Random Functions
+        #region Miscellaneous Functions
+        //this changes the HUDS boundary depending on what type is checked
         private Object boundaryType(string hello)
         {
+            //if torodial is true the boundary type is torodial if not it is finite
             if (IsTorodial == true)
             {
                 hello = "Torodial";
@@ -969,12 +1035,12 @@ namespace GOLStartUpTemplate3
             }
             return hello;
         }
-
+        //this code clears the screen and is used for new and other functions
         private void New()
         {
+            //this goes through the grid and clears everything leaving it blank
             for (int y = 0; y < universe.GetLength(1); y++)
             {
-
                 for (int x = 0; x < universe.GetLength(0); x++)
                 {
                     universe[x, y] = false;
@@ -985,9 +1051,9 @@ namespace GOLStartUpTemplate3
                     toolStripStatusAlive.Text = "Alive = " + numberOfAlive.ToString();
                 }
             }
+
             graphicsPanel1.Invalidate();
         }
         #endregion
-
     }
 }
